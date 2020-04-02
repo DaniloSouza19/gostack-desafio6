@@ -62,7 +62,7 @@ export const Info = styled.View`
   flex: 1;
 `;
 
-export const Title = styled.attrs({
+export const Title = styled.Text.attrs({
   numberOfLines: 1,
 })`
   font-size: 15px;
