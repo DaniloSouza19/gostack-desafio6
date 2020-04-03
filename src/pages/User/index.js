@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { ActivityIndicator } from 'react-native';
 import PropTypes from 'prop-types';
 import api from '../../services/api';
 
@@ -10,6 +9,7 @@ import {
   Name,
   Bio,
   Stars,
+  Loading,
   Starred,
   OwnerAvatar,
   Info,
@@ -31,20 +31,23 @@ export default class User extends Component {
     stars: [],
     loading: false,
     page: 1,
+    refreshing: false,
   };
 
   async componentDidMount() {
+    const { route, navigation } = this.props;
+    const { user } = route.params;
+
+    navigation.setOptions({ title: user.name });
     this.load();
   }
 
   load = async (page = 1) => {
     const { stars } = this.state;
-    const { route, navigation } = this.props;
+    const { route } = this.props;
     const { user } = route.params;
 
     this.setState({ loading: true });
-
-    navigation.setOptions({ title: user.name });
 
     const response = await api.get(`/users/${user.login}/starred`, {
       params: { page },
@@ -53,6 +56,7 @@ export default class User extends Component {
     this.setState({
       stars: page >= 2 ? [...stars, ...response.data] : response.data,
       loading: false,
+      refreshing: false,
       page,
     });
   };
@@ -67,8 +71,12 @@ export default class User extends Component {
     }
   };
 
+  refreshList = async () => {
+    this.setState({ refreshing: true, stars: [] }, this.load);
+  };
+
   render() {
-    const { stars, loading } = this.state;
+    const { stars, loading, refreshing } = this.state;
     const { route } = this.props;
 
     const { user } = route.params;
@@ -82,12 +90,14 @@ export default class User extends Component {
         </Header>
 
         {loading ? (
-          <ActivityIndicator size="large" />
+          <Loading />
         ) : (
           <Stars
+            data={stars}
+            onRefresh={this.refreshList}
+            refreshing={refreshing}
             onEndReachedThereshold={0.2}
             onEndReached={this.loadMore}
-            data={stars}
             keyExtractor={(star) => String(star.id)}
             renderItem={({ item }) => (
               <Starred>
